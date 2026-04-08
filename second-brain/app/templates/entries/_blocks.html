@@ -1,0 +1,49 @@
+{# Partial: renders the block list for an entry. Used in detail page and HTMX swaps. #}
+<div class="block-list" id="block-list">
+  {% for rb in rendered_blocks %}
+  <div class="block-item" id="block-{{ rb.id }}">
+
+    <!-- Controls — fade in on hover -->
+    <div class="block-controls">
+      <span class="block-type-tag">{{ rb.type }}</span>
+      <button class="btn btn-ghost btn-xs"
+        hx-get="/entries/{{ entry.id }}/blocks/{{ rb.id }}/edit"
+        hx-target="#block-{{ rb.id }}"
+        hx-swap="outerHTML">Edit</button>
+      <button class="btn btn-ghost btn-xs" style="color:var(--danger);"
+        hx-delete="/api/v1/entries/{{ entry.id }}/blocks/{{ rb.id }}"
+        hx-confirm="Delete this block?"
+        hx-target="#block-{{ rb.id }}"
+        hx-swap="outerHTML">Delete</button>
+      <span class="text-muted2 text-xs ml-auto" style="font-family:var(--font-mono);">pos {{ rb.position }}</span>
+    </div>
+
+    {# ── Render by block type ── #}
+    {% if rb.type == 'markdown' %}
+      <div class="block-markdown">{{ rb.content }}</div>
+
+    {% elif rb.type == 'code' %}
+      <div class="block-code-wrap">{{ rb.rendered | safe }}</div>
+
+    {% elif rb.type == 'quote' %}
+      <div class="block-quote-wrap">{{ rb.rendered | safe }}</div>
+
+    {% elif rb.type == 'list' %}
+      <div class="block-list-wrap">{{ rb.rendered | safe }}</div>
+
+    {% elif rb.type == 'table' %}
+      <div class="block-table-wrap">{{ rb.rendered | safe }}</div>
+
+    {% else %}
+      <div class="block-prose">{{ rb.content }}</div>
+    {% endif %}
+
+  </div>
+  {% else %}
+    <div class="empty-state" style="padding:2rem 1rem;">
+      <div class="empty-icon">&#128196;</div>
+      <h3>No content yet</h3>
+      <p>Add your first block below to start building this entry.</p>
+    </div>
+  {% endfor %}
+</div>

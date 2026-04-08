@@ -1,0 +1,37 @@
+{# Partial: view item list #}
+<div id="view-items-list" class="view-item-list">
+  {% if enriched_items %}
+    {% for ei in enriched_items %}
+    <div class="view-item" id="vi-{{ ei.item.id }}">
+      <span class="view-item-pos">{{ ei.item.position + 1 }}</span>
+      {% if ei.item.section_label %}
+        <span class="view-item-section">{{ ei.item.section_label }}</span>
+      {% endif %}
+      <div class="view-item-body">
+        {% if ei.entry %}
+          <a href="/entries/{{ ei.entry.id }}" class="view-item-title">{{ ei.entry.title }}</a>
+          <div class="view-item-meta">
+            <span class="badge badge-{{ ei.entry.status }}">{{ ei.entry.status }}</span>
+            {% if ei.entry.category %}
+              <span class="badge badge-category">{{ ei.entry.category }}</span>
+            {% endif %}
+          </div>
+        {% else %}
+          <span class="text-muted text-sm font-mono">{{ ei.item.entry_id }} — entry not found</span>
+        {% endif %}
+      </div>
+      <button class="btn btn-ghost btn-xs" style="color:var(--danger);"
+        hx-delete="/api/v1/views/{{ view.id }}/items/{{ ei.item.id }}"
+        hx-confirm="Remove this entry from the view?"
+        hx-target="#vi-{{ ei.item.id }}"
+        hx-swap="outerHTML">×</button>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state" style="padding:2rem 1rem;">
+      <div class="empty-icon">&#128464;</div>
+      <h3>No entries in this view</h3>
+      <p>Add entries below to build this view.</p>
+    </div>
+  {% endif %}
+</div>

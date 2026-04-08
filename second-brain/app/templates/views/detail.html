@@ -1,0 +1,127 @@
+{% extends "layout.html" %}
+{% block title %}{{ view.title }} — Second Brain{% endblock %}
+
+{% block content %}
+
+<!-- View hero -->
+<div class="entry-hero">
+  <div class="flex items-center gap-3 mb-2">
+    <a href="/views" class="btn btn-ghost btn-xs">← Views</a>
+  </div>
+  <h1>{{ view.title }}</h1>
+  <div class="entry-hero-meta">
+    <span class="badge badge-{{ view.type }}">{{ view.type }}</span>
+    <span class="sep">·</span>
+    <span>{{ enriched_items | length }} item{% if enriched_items | length != 1 %}s{% endif %}</span>
+    <span class="sep">·</span>
+    <span>Updated {{ view.updated_at.strftime('%b %d, %Y') }}</span>
+    <span class="ml-auto">
+      <button class="btn btn-ghost btn-sm" style="color:var(--danger);"
+        hx-delete="/api/v1/views/{{ view.id }}"
+        hx-confirm="Delete this view?"
+        hx-push-url="/views"
+        hx-target="body">Delete view</button>
+    </span>
+  </div>
+  {% if view.description %}
+    <p class="entry-hero-summary">{{ view.description }}</p>
+  {% endif %}
+</div>
+
+<div class="layout-cols">
+
+  <!-- Left: items -->
+  <div>
+    <div class="card">
+      <div class="section-heading">
+        Entries in this view
+        <span class="count">{{ enriched_items | length }}</span>
+      </div>
+
+      {% include "views/_items.html" %}
+
+      <!-- Add item -->
+      <div class="divider"></div>
+      <details class="disclosure">
+        <summary class="btn btn-secondary btn-sm">+ Add entry</summary>
+        <form hx-post="/api/v1/views/{{ view.id }}/items"
+              hx-target="#view-items-list"
+              hx-swap="beforeend">
+          <div class="form-group">
+            <label>Entry ID</label>
+            <input type="text" name="entry_id" placeholder="ent_…" />
+          </div>
+          <div class="form-group">
+            <label>Section label <span class="label-hint">optional</span></label>
+            <input type="text" name="section_label" />
+          </div>
+          <div class="form-group">
+            <label>Position</label>
+            <input type="number" name="position" value="{{ enriched_items | length }}" min="0" style="width:100px;" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Add</button>
+        </form>
+      </details>
+    </div>
+
+    <!-- Reorder -->
+    {% if enriched_items | length > 1 %}
+    <div class="card mt-4" style="background:var(--surface-dim);border-color:var(--border-light);box-shadow:none;">
+      <div class="section-label">Reorder items</div>
+      <p class="text-xs text-muted mb-2">Paste ViewItem IDs in the desired order, comma-separated.</p>
+      <div class="flex gap-2 items-start">
+        <textarea id="reorder-item-ids" style="min-height:56px;font-size:.75rem;font-family:var(--font-mono);flex:1;"
+          placeholder="{{ enriched_items | map(attribute='item') | map(attribute='id') | join(', ') }}"></textarea>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="submitItemReorder('{{ view.id }}')">Reorder</button>
+      </div>
+      <div id="reorder-item-result" class="mt-2"></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: view metadata -->
+  <div class="sidebar">
+    <div class="card">
+      <div class="section-label">View details</div>
+      <dl class="meta-dl">
+        <dt>Type</dt>
+        <dd><span class="badge badge-{{ view.type }}">{{ view.type }}</span></dd>
+        <dt>Created</dt>
+        <dd>{{ view.created_at.strftime('%b %d, %Y') }}</dd>
+        <dt>Updated</dt>
+        <dd>{{ view.updated_at.strftime('%b %d, %Y') }}</dd>
+        <dt>ID</dt>
+        <dd class="mono">{{ view.id }}</dd>
+      </dl>
+
+      {% if view.sort %}
+        <div class="section-label" style="margin-top:1.25rem;">Sort</div>
+        <pre style="font-size:.75rem;background:var(--surface-dim);padding:.625rem .75rem;border-radius:var(--radius-sm);overflow-x:auto;font-family:var(--font-mono);">{{ view.sort | tojson(indent=2) }}</pre>
+      {% endif %}
+      {% if view.filter %}
+        <div class="section-label" style="margin-top:1.25rem;">Filter</div>
+        <pre style="font-size:.75rem;background:var(--surface-dim);padding:.625rem .75rem;border-radius:var(--radius-sm);overflow-x:auto;font-family:var(--font-mono);">{{ view.filter | tojson(indent=2) }}</pre>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function submitItemReorder(viewId) {
+  const raw = document.getElementById("reorder-item-ids").value;
+  const ids = raw.split(",").map(s => s.trim()).filter(Boolean);
+  const resp = await fetch(`/api/v1/views/${viewId}/items/reorder`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ item_ids: ids }),
+  });
+  const data = await resp.json();
+  document.getElementById("reorder-item-result").innerHTML =
+    `<div class="json-block" style="max-height:200px;">${JSON.stringify(data, null, 2)}</div>`;
+  if (data.ok) location.reload();
+}
+</script>
+{% endblock %}

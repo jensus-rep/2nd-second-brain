@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Second Brain{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/app.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+</head>
+<body>
+  <nav>
+    <a class="nav-brand" href="/">
+      <span class="nav-brand-mark">&#9711;</span>
+      Second Brain
+    </a>
+    <ul class="nav-links">
+      <li><a href="/entries" {% if request.url.path.startswith('/entries') %}class="active"{% endif %}>Entries</a></li>
+      <li><a href="/views"   {% if request.url.path.startswith('/views')   %}class="active"{% endif %}>Views</a></li>
+      <li><a href="/imports" {% if request.url.path.startswith('/imports') %}class="active"{% endif %}>Import</a></li>
+      <li><a href="/exports" {% if request.url.path.startswith('/exports') %}class="active"{% endif %}>Export</a></li>
+    </ul>
+    <span class="nav-spacer"></span>
+    <div class="nav-aux">
+      <a href="/docs">API</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

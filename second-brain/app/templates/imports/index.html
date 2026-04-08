@@ -1,0 +1,150 @@
+{% extends "layout.html" %}
+{% block title %}Import — Second Brain{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Import</h1>
+  <p class="page-subtitle">Apply an Update Matrix or restore from a Snapshot.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+
+  <!-- Update Matrix -->
+  <div class="card">
+    <div class="section-label">Update Matrix</div>
+    <p class="text-sm text-muted" style="margin-bottom:1.25rem;line-height:1.6;">
+      Explicit typed mutations. Supports <code style="font-family:var(--font-mono);font-size:.8em;">temp_id</code> references and strict / best-effort modes. All changes are recorded in the update log.
+    </p>
+    <form id="matrix-form" onsubmit="return false;">
+      <div class="form-group">
+        <label for="matrix-source">Source type</label>
+        <select id="matrix-source">
+          <option value="manual">manual</option>
+          <option value="agent">agent</option>
+          <option value="llm">llm</option>
+          <option value="import">import</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="matrix-json">Matrix JSON</label>
+        <textarea id="matrix-json" class="textarea-json" placeholder='{
+  "schema_version": "1.0",
+  "mode": "strict",
+  "operations": [
+    {
+      "op": "create_entry",
+      "temp_id": "tmp_1",
+      "data": { "title": "My Entry", "status": "active" }
+    }
+  ]
+}'></textarea>
+      </div>
+      <button type="button" class="btn btn-primary" onclick="submitMatrix()">Apply matrix</button>
+    </form>
+    <div id="matrix-result" class="mt-4"></div>
+  </div>
+
+  <!-- Snapshot import -->
+  <div class="card">
+    <div class="section-label">Snapshot Import</div>
+    <p class="text-sm text-muted" style="margin-bottom:1.25rem;line-height:1.6;">
+      Non-destructive upsert by ID. Entities not present in the snapshot are left untouched.
+    </p>
+    <form id="snapshot-form" onsubmit="return false;">
+      <div class="form-group">
+        <label for="snapshot-json">Snapshot JSON</label>
+        <textarea id="snapshot-json" class="textarea-json" placeholder='{
+  "schema_version": "1.0",
+  "entries": [],
+  "views": []
+}'></textarea>
+      </div>
+      <button type="button" class="btn btn-primary" onclick="submitSnapshot()">Import snapshot</button>
+    </form>
+    <div id="snapshot-result" class="mt-4"></div>
+  </div>
+
+</div>
+
+<!-- Operation reference -->
+<div class="card">
+  <div class="section-label">Update Matrix — operation reference</div>
+  <p class="text-sm text-muted" style="margin-bottom:1rem;">Available operations and their required fields.</p>
+  <div style="overflow-x:auto;">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>Operation</th>
+          <th>Required fields</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in [
+          ("create_entry",       "data.title, data.status",                       "temp_id optional"),
+          ("update_entry",       "entry_id, patch{}",                             "partial update"),
+          ("delete_entry",       "entry_id",                                      "cascades blocks and relations"),
+          ("archive_entry",      "entry_id",                                      "sets status = archived"),
+          ("append_block",       "entry_ref, data.type, data.position",           "entry_ref may be temp_id"),
+          ("insert_block",       "entry_ref, data.type, data.position",           "shifts existing blocks"),
+          ("update_block",       "entry_id, block_id, patch{}",                   "partial update"),
+          ("delete_block",       "entry_id, block_id",                            ""),
+          ("reorder_blocks",     "entry_id, block_ids[]",                         "must be the complete set"),
+          ("link_entries",       "data.source_entry_id, data.target_entry_id, data.relation_type", ""),
+          ("unlink_relation",    "relation_id",                                   "exact relation ID required"),
+          ("create_view",        "data.title, data.type",                         "temp_id optional"),
+          ("update_view",        "view_id, patch{}",                              ""),
+          ("delete_view",        "view_id",                                       "cascades items"),
+          ("add_view_item",      "data.view_id, data.entry_id",                   ""),
+          ("remove_view_item",   "view_item_id",                                  ""),
+          ("reorder_view_items", "view_id, item_ids[]",                           "must be the complete set"),
+        ] %}
+        <tr>
+          <td>{{ row[0] }}</td>
+          <td>{{ row[1] }}</td>
+          <td>{{ row[2] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function submitMatrix() {
+  const source = document.getElementById("matrix-source").value;
+  const raw = document.getElementById("matrix-json").value;
+  let body;
+  try { body = JSON.parse(raw); }
+  catch (e) {
+    showResult("matrix-result", { ok: false, error: { code: "PARSE_ERROR", message: "Invalid JSON: " + e.message } });
+    return;
+  }
+  const resp = await fetch(`/api/v1/import/update-matrix?source=${source}`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  showResult("matrix-result", await resp.json());
+}
+
+async function submitSnapshot() {
+  const raw = document.getElementById("snapshot-json").value;
+  let body;
+  try { body = JSON.parse(raw); }
+  catch (e) {
+    showResult("snapshot-result", { ok: false, error: { code: "PARSE_ERROR", message: "Invalid JSON: " + e.message } });
+    return;
+  }
+  const resp = await fetch("/api/v1/import/snapshot", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  showResult("snapshot-result", await resp.json());
+}
+
+function showResult(id, data) {
+  document.getElementById(id).innerHTML =
+    `<div class="json-block">${JSON.stringify(data, null, 2)}</div>`;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends "layout.html" %}
+{% block title %}{{ entry.title }} — Second Brain{% endblock %}
+
+{% block content %}
+
+<!-- Entry hero -->
+<div class="entry-hero">
+  <div class="flex items-center gap-3 mb-2">
+    <a href="/entries" class="btn btn-ghost btn-xs">← Entries</a>
+  </div>
+  <h1>{{ entry.title }}</h1>
+  <div class="entry-hero-meta">
+    <span class="badge badge-{{ entry.status }}">{{ entry.status }}</span>
+    {% if entry.category %}
+      <span class="sep">·</span>
+      <span class="badge badge-category">{{ entry.category }}</span>
+    {% endif %}
+    <span class="sep">·</span>
+    <span>Updated {{ entry.updated_at.strftime('%b %d, %Y') }}</span>
+    <span class="ml-auto flex gap-2">
+      <a href="/entries/{{ entry.id }}/edit" class="btn btn-secondary btn-sm">Edit</a>
+      <button class="btn btn-ghost btn-sm"
+        style="color:var(--danger);"
+        hx-delete="/api/v1/entries/{{ entry.id }}"
+        hx-confirm="Delete this entry and all its blocks?"
+        hx-push-url="/entries"
+        hx-target="body">Delete</button>
+    </span>
+  </div>
+  {% if entry.summary %}
+    <p class="entry-hero-summary">{{ entry.summary }}</p>
+  {% endif %}
+</div>
+
+<!-- Two-column layout -->
+<div class="layout-cols">
+
+  <!-- Left: content blocks -->
+  <div>
+    <div class="card">
+      <div class="section-heading">
+        Content
+        <span class="count">{{ entry.blocks | length }} block{% if entry.blocks | length != 1 %}s{% endif %}</span>
+      </div>
+
+      <div id="blocks-container">
+        {% include "entries/_blocks.html" %}
+      </div>
+
+      <!-- Add block -->
+      <div class="divider"></div>
+      <details class="disclosure">
+        <summary class="btn btn-secondary btn-sm">+ Add block</summary>
+        <form id="add-block-form"
+          hx-post="/api/v1/entries/{{ entry.id }}/blocks"
+          hx-target="#blocks-container"
+          hx-swap="innerHTML"
+          hx-on::after-request="this.reset()">
+          <div class="form-group">
+            <label>Block type</label>
+            <select name="type" id="new-block-type">
+              <option value="text">Text</option>
+              <option value="markdown" selected>Markdown</option>
+              <option value="code">Code</option>
+              <option value="list">List</option>
+              <option value="table">Table</option>
+              <option value="quote">Quote</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Content</label>
+            <textarea name="content" placeholder="Block content…"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Position <span class="label-hint">0-indexed</span></label>
+            <input type="number" name="position" value="{{ entry.blocks | length }}" min="0" style="width:100px;" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Add block</button>
+        </form>
+      </details>
+    </div>
+
+    <!-- Reorder (only if more than one block) -->
+    {% if entry.blocks | length > 1 %}
+    <div class="card mt-4" style="background:var(--surface-dim);border-color:var(--border-light);box-shadow:none;">
+      <div class="section-label">Reorder blocks</div>
+      <p class="text-xs text-muted mb-2">Paste block IDs in the desired order, comma-separated.</p>
+      <div class="flex gap-2 items-start">
+        <textarea id="reorder-ids" style="min-height:56px;font-size:.75rem;font-family:var(--font-mono);flex:1;"
+          placeholder="{{ entry.blocks | map(attribute='id') | join(', ') }}"></textarea>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="submitReorder('{{ entry.id }}')">Reorder</button>
+      </div>
+      <div id="reorder-result" class="mt-2"></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: metadata + relations -->
+  <div class="sidebar">
+
+    <!-- Metadata -->
+    <div class="card">
+      <div class="section-label">Details</div>
+      <dl class="meta-dl">
+        <dt>Status</dt>
+        <dd><span class="badge badge-{{ entry.status }}">{{ entry.status }}</span></dd>
+        {% if entry.category %}
+        <dt>Category</dt>
+        <dd>{{ entry.category }}</dd>
+        {% endif %}
+        {% if entry.slug %}
+        <dt>Slug</dt>
+        <dd>{{ entry.slug }}</dd>
+        {% endif %}
+        <dt>Created</dt>
+        <dd>{{ entry.created_at.strftime('%b %d, %Y') }}</dd>
+        <dt>Updated</dt>
+        <dd>{{ entry.updated_at.strftime('%b %d, %Y') }}</dd>
+        <dt>ID</dt>
+        <dd class="mono">{{ entry.id }}</dd>
+      </dl>
+    </div>
+
+    <!-- Relations -->
+    <div class="card">
+      <div class="section-label">
+        Relations
+        {% if entry.relations %}({{ entry.relations | length }}){% endif %}
+      </div>
+      {% if entry.relations %}
+        <div class="relation-list">
+          {% for r in entry.relations %}
+          <div class="relation-item" id="rel-{{ r.id }}">
+            <span class="relation-type">{{ r.relation_type }}</span>
+            <a href="/entries/{{ r.target_entry_id }}" class="relation-target">{{ r.target_entry_id }}</a>
+            <button class="btn btn-ghost btn-xs" style="color:var(--danger);padding:.125rem .375rem;"
+              hx-delete="/api/v1/entries/{{ entry.id }}/relations/{{ r.id }}"
+              hx-confirm="Remove this relation?"
+              hx-target="#rel-{{ r.id }}"
+              hx-swap="outerHTML">×</button>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-xs text-muted">No relations yet.</p>
+      {% endif %}
+
+      <div class="divider"></div>
+      <details class="disclosure">
+        <summary class="btn btn-secondary btn-sm">+ Add relation</summary>
+        <form hx-post="/api/v1/entries/{{ entry.id }}/relations"
+              hx-target=".relation-list"
+              hx-swap="beforeend">
+          <div class="form-group">
+            <label>Target entry ID</label>
+            <input type="text" name="target_entry_id" placeholder="ent_…" />
+          </div>
+          <div class="form-group">
+            <label>Relation type</label>
+            <select name="relation_type">
+              <option value="related">related</option>
+              <option value="extends">extends</option>
+              <option value="contradicts">contradicts</option>
+              <option value="references">references</option>
+              <option value="duplicate_of">duplicate_of</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Add</button>
+        </form>
+      </details>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function submitReorder(entryId) {
+  const raw = document.getElementById("reorder-ids").value;
+  const ids = raw.split(",").map(s => s.trim()).filter(Boolean);
+  const resp = await fetch(`/api/v1/entries/${entryId}/blocks/reorder`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ block_ids: ids }),
+  });
+  const data = await resp.json();
+  document.getElementById("reorder-result").innerHTML =
+    `<div class="json-block" style="max-height:200px;">${JSON.stringify(data, null, 2)}</div>`;
+  if (data.ok) location.reload();
+}
+</script>
+{% endblock %}

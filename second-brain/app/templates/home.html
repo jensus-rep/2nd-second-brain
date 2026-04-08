@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+{% block title %}Second Brain{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Your knowledge, structured.</h1>
+  <p class="page-subtitle">Entries, views, and connected ideas — all in one place.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+
+  <!-- Recent Entries -->
+  <div class="card">
+    <div class="section-label">Recent entries</div>
+    {% if entries %}
+      <div class="entry-list">
+        {% for e in entries %}
+        <a class="entry-row" href="/entries/{{ e.id }}">
+          <div class="entry-row-top">
+            <span class="entry-row-title">{{ e.title }}</span>
+            <span class="entry-row-date">{{ e.updated_at.strftime('%b %d') }}</span>
+          </div>
+          <div class="entry-row-meta">
+            <span class="badge badge-{{ e.status }}">{{ e.status }}</span>
+            {% if e.category %}<span class="badge badge-category">{{ e.category }}</span>{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding:2rem 1rem;">
+        <div class="empty-icon">&#128196;</div>
+        <h3>No entries yet</h3>
+        <p>Create your first knowledge entry to get started.</p>
+      </div>
+    {% endif %}
+    <div class="divider"></div>
+    <div class="flex gap-2">
+      <a href="/entries/new" class="btn btn-primary btn-sm">New entry</a>
+      <a href="/entries" class="btn btn-secondary btn-sm">All entries</a>
+    </div>
+  </div>
+
+  <!-- Views -->
+  <div class="card">
+    <div class="section-label">Views</div>
+    {% if views %}
+      <div class="entry-list">
+        {% for v in views %}
+        <a class="entry-row" href="/views/{{ v.id }}">
+          <div class="entry-row-top">
+            <span class="entry-row-title">{{ v.title }}</span>
+            <span class="entry-row-date">{{ v.updated_at.strftime('%b %d') }}</span>
+          </div>
+          <div class="entry-row-meta">
+            <span class="badge badge-{{ v.type }}">{{ v.type }}</span>
+            {% if v.description %}
+              <span class="text-xs text-muted">{{ v.description[:60] }}{% if v.description|length > 60 %}…{% endif %}</span>
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding:2rem 1rem;">
+        <div class="empty-icon">&#128464;</div>
+        <h3>No views yet</h3>
+        <p>Views collect related entries into curated reading structures.</p>
+      </div>
+    {% endif %}
+    <div class="divider"></div>
+    <div class="flex gap-2">
+      <a href="/views" class="btn btn-secondary btn-sm">All views</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Quick actions -->
+<div class="card" style="background:var(--surface-dim);border-color:var(--border-light);box-shadow:none;">
+  <div class="flex items-center gap-3 flex-wrap">
+    <span class="text-xs text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:.07em;">Quick actions</span>
+    <a href="/imports" class="btn btn-secondary btn-sm">Import data</a>
+    <a href="/exports" class="btn btn-secondary btn-sm">Export snapshot</a>
+    <a href="/docs" class="btn btn-secondary btn-sm">API docs</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block title %}{% if entry %}Edit Entry{% else %}New Entry{% endif %} — Second Brain{% endblock %}
+
+{% block content %}
+<div class="page-header-row">
+  <div>
+    <h1>{% if entry %}Edit entry{% else %}New entry{% endif %}</h1>
+    {% if entry %}
+      <p class="text-sm text-muted mt-1">{{ entry.title }}</p>
+    {% else %}
+      <p class="text-sm text-muted mt-1">Fill in the details to create a new knowledge entry.</p>
+    {% endif %}
+  </div>
+  <a href="{% if entry %}/entries/{{ entry.id }}{% else %}/entries{% endif %}" class="btn btn-secondary btn-sm">Cancel</a>
+</div>
+
+<div style="max-width:600px;">
+  <div class="card">
+    <form
+      {% if entry %}
+        hx-patch="/api/v1/entries/{{ entry.id }}"
+      {% else %}
+        hx-post="/api/v1/entries"
+      {% endif %}
+      hx-target="#form-result"
+      hx-swap="innerHTML">
+
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" required
+               value="{{ entry.title if entry else '' }}"
+               placeholder="Give this entry a clear, descriptive title" />
+      </div>
+
+      <div class="form-group">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <option value="draft"    {% if not entry or entry.status == 'draft'    %}selected{% endif %}>Draft</option>
+          <option value="active"   {% if entry and entry.status == 'active'   %}selected{% endif %}>Active</option>
+          <option value="archived" {% if entry and entry.status == 'archived' %}selected{% endif %}>Archived</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="category">Category <span class="label-hint">optional</span></label>
+        <input type="text" id="category" name="category"
+               value="{{ entry.category if entry else '' }}"
+               placeholder="e.g. Research, Ideas, Reference" />
+      </div>
+
+      <div class="form-group">
+        <label for="summary">Summary <span class="label-hint">optional — shown as intro text</span></label>
+        <textarea id="summary" name="summary" style="min-height:100px;font-family:inherit;">{{ entry.summary if entry else '' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="slug">Slug <span class="label-hint">auto-generated if blank</span></label>
+        <input type="text" id="slug" name="slug"
+               value="{{ entry.slug if entry else '' }}"
+               placeholder="my-entry-slug" />
+      </div>
+
+      <div class="divider"></div>
+      <button type="submit" class="btn btn-primary">
+        {% if entry %}Save changes{% else %}Create entry{% endif %}
+      </button>
+    </form>
+
+    <div id="form-result" class="mt-4"></div>
+  </div>
+</div>
+{% endblock %}

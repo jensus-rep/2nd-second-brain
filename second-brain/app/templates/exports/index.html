@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block title %}Export — Second Brain{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Export</h1>
+  <p class="page-subtitle">Full snapshot — round-trip capable JSON export of all entries and views.</p>
+</div>
+
+<div class="card">
+  <!-- Header row -->
+  <div class="flex items-center gap-3 flex-wrap" style="margin-bottom:1.25rem;">
+    <div>
+      <div class="section-label" style="margin:0 0 .25rem;">Snapshot</div>
+      <div class="flex gap-3 text-sm text-muted">
+        <span>{{ snapshot.entries | length }} entries</span>
+        <span>·</span>
+        <span>{{ snapshot.views | length }} views</span>
+        <span>·</span>
+        <span>{{ snapshot.exported_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+      </div>
+    </div>
+    <div class="flex gap-2 ml-auto">
+      <button id="copy-btn" class="btn btn-secondary btn-sm" onclick="copySnapshot()">Copy to clipboard</button>
+      <a href="/api/v1/export/snapshot" class="btn btn-primary btn-sm">Download JSON</a>
+    </div>
+  </div>
+
+  <div id="snapshot-output" class="json-block">{{ snapshot.model_dump_json(indent=2) }}</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copySnapshot() {
+  const content = document.getElementById("snapshot-output").textContent;
+  navigator.clipboard.writeText(content).then(() => {
+    const btn = document.getElementById("copy-btn");
+    const original = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.textContent = original; }, 1800);
+  });
+}
+</script>
+{% endblock %}

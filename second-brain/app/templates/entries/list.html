@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+{% block title %}Entries — Second Brain{% endblock %}
+
+{% block content %}
+<div class="page-header-row">
+  <div>
+    <h1>Entries</h1>
+    {% if status_filter or category_filter %}
+      <p class="text-sm text-muted mt-1">
+        Filtered by
+        {% if category_filter %}<strong>{{ category_filter }}</strong>{% endif %}
+        {% if status_filter %}<strong>{{ status_filter }}</strong>{% endif %}
+      </p>
+    {% endif %}
+  </div>
+  <a href="/entries/new" class="btn btn-primary">New entry</a>
+</div>
+
+<!-- Filters -->
+<form method="get" action="/entries" class="filter-bar">
+  <input type="text" name="category" placeholder="Category" value="{{ category_filter or '' }}" style="width:180px;" />
+  <select name="status" style="width:150px;">
+    <option value="">All statuses</option>
+    <option value="active"   {% if status_filter == 'active'   %}selected{% endif %}>Active</option>
+    <option value="draft"    {% if status_filter == 'draft'    %}selected{% endif %}>Draft</option>
+    <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>Archived</option>
+  </select>
+  <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+  {% if status_filter or category_filter %}
+    <a href="/entries" class="btn btn-ghost btn-sm">Clear</a>
+  {% endif %}
+</form>
+
+{% if entries %}
+  <div class="entry-list">
+    {% for e in entries %}
+    <a class="entry-row" href="/entries/{{ e.id }}">
+      <div class="entry-row-top">
+        <span class="entry-row-title">{{ e.title }}</span>
+        <span class="entry-row-date">{{ e.updated_at.strftime('%b %d, %Y') }}</span>
+      </div>
+      <div class="entry-row-meta">
+        <span class="badge badge-{{ e.status }}">{{ e.status }}</span>
+        {% if e.category %}<span class="badge badge-category">{{ e.category }}</span>{% endif %}
+      </div>
+      {% if e.summary %}
+        <div class="entry-row-summary">{{ e.summary[:160] }}{% if e.summary|length > 160 %}…{% endif %}</div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">&#128196;</div>
+      <h3>No entries found</h3>
+      <p>
+        {% if status_filter or category_filter %}
+          Try adjusting your filters, or <a href="/entries">clear them</a>.
+        {% else %}
+          <a href="/entries/new">Create your first entry</a> to begin building your knowledge base.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

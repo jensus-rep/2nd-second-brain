@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block title %}Views — Second Brain{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Views</h1>
+  <p class="page-subtitle">Curated collections of entries, organised by theme or purpose.</p>
+</div>
+
+{% if views %}
+  <div class="card-grid">
+    {% for v in views %}
+    <a class="card entry-card" href="/views/{{ v.id }}">
+      <div class="ec-title">{{ v.title }}</div>
+      <div class="ec-meta">
+        <span class="badge badge-{{ v.type }}">{{ v.type }}</span>
+        <span>{{ v.updated_at.strftime('%b %d, %Y') }}</span>
+      </div>
+      {% if v.description %}
+        <div class="ec-summary">{{ v.description[:120] }}{% if v.description|length > 120 %}…{% endif %}</div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">&#128464;</div>
+      <h3>No views yet</h3>
+      <p>
+        Views group related entries into curated reading structures.<br />
+        Create one via the <a href="/imports">Import</a> page or the API.
+      </p>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
